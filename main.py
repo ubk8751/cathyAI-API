@@ -42,25 +42,32 @@ async def models():
 
 @app.post("/api/generate")
 async def generate(request: Request):
+    body = await request.json()
+    stream = body.get("stream", True)
+
     try:
-        body = await request.json()
-        stream = body.get("stream", True)
-        timeout = httpx.Timeout(connect=10.0, read=None, write=10.0, pool=10.0)
-        async with httpx.AsyncClient(timeout=timeout) as client:
-            if not stream:
+        if not stream:
+            timeout = httpx.Timeout(connect=10.0, read=None, write=10.0, pool=10.0)
+            async with httpx.AsyncClient(timeout=timeout) as client:
                 r = await client.post(f"{AI_BACKEND_URL}/api/generate", json=body)
                 r.raise_for_status()
                 return r.json()
-            
-            async with client.stream("POST", f"{AI_BACKEND_URL}/api/generate", json=body) as r:
-                r.raise_for_status()
-                async def iter_content():
-                    async for chunk in r.aiter_bytes():
-                        yield chunk
-                return StreamingResponse(
-                    iter_content(),
-                    media_type=r.headers.get("content-type", "application/x-ndjson")
-                )
+
+        timeout = httpx.Timeout(connect=10.0, read=None, write=10.0, pool=10.0)
+        client = httpx.AsyncClient(timeout=timeout)
+
+        async def iter_ndjson():
+            try:
+                async with client.stream("POST", f"{AI_BACKEND_URL}/api/generate", json=body) as r:
+                    r.raise_for_status()
+                    async for line in r.aiter_lines():
+                        if line:
+                            yield (line + "\n").encode("utf-8")
+            finally:
+                await client.aclose()
+
+        return StreamingResponse(iter_ndjson(), media_type="application/x-ndjson")
+
     except httpx.HTTPStatusError as e:
         raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
     except httpx.RequestError as e:
@@ -69,25 +76,32 @@ async def generate(request: Request):
 
 @app.post("/api/chat")
 async def chat(request: Request):
+    body = await request.json()
+    stream = body.get("stream", True)
+
     try:
-        body = await request.json()
-        stream = body.get("stream", True)
-        timeout = httpx.Timeout(connect=10.0, read=None, write=10.0, pool=10.0)
-        async with httpx.AsyncClient(timeout=timeout) as client:
-            if not stream:
+        if not stream:
+            timeout = httpx.Timeout(connect=10.0, read=None, write=10.0, pool=10.0)
+            async with httpx.AsyncClient(timeout=timeout) as client:
                 r = await client.post(f"{AI_BACKEND_URL}/api/chat", json=body)
                 r.raise_for_status()
                 return r.json()
-            
-            async with client.stream("POST", f"{AI_BACKEND_URL}/api/chat", json=body) as r:
-                r.raise_for_status()
-                async def iter_content():
-                    async for chunk in r.aiter_bytes():
-                        yield chunk
-                return StreamingResponse(
-                    iter_content(),
-                    media_type=r.headers.get("content-type", "application/x-ndjson")
-                )
+
+        timeout = httpx.Timeout(connect=10.0, read=None, write=10.0, pool=10.0)
+        client = httpx.AsyncClient(timeout=timeout)
+
+        async def iter_ndjson():
+            try:
+                async with client.stream("POST", f"{AI_BACKEND_URL}/api/chat", json=body) as r:
+                    r.raise_for_status()
+                    async for line in r.aiter_lines():
+                        if line:
+                            yield (line + "\n").encode("utf-8")
+            finally:
+                await client.aclose()
+
+        return StreamingResponse(iter_ndjson(), media_type="application/x-ndjson")
+
     except httpx.HTTPStatusError as e:
         raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
     except httpx.RequestError as e:

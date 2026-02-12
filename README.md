@@ -22,11 +22,10 @@ FastAPI proxy service for AI backends (Ollama, etc.).
    pip install -r requirements.txt
    ```
 
-4. **Start backend** (your AI provider):
-    ```bash
-    # Start your AI backend (example: Ollama)
-    # ollama serve
-    ```
+4. **Start backend** (e.g., Ollama):
+   ```bash
+   ollama serve
+   ```
 
 5. **Run proxy:**
    ```bash
