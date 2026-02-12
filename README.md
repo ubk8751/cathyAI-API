@@ -35,9 +35,10 @@ FastAPI proxy service for AI backends (Ollama, etc.).
 ## Endpoints
 
 - `GET /health` - Health check + backend status
-- `GET /models` - List available models
-- `POST /api/generate` - Text generation (streaming supported)
-- `POST /api/chat` - Chat completions (streaming supported)
+- `GET /models` - List model names
+- `GET /models/raw` - Raw backend models response
+- `POST /api/generate` - Text generation (streaming/non-streaming)
+- `POST /api/chat` - Chat completions (streaming/non-streaming)
 
 ## Configuration
 
@@ -54,7 +55,10 @@ curl http://localhost:8000/health
 # List models
 curl http://localhost:8000/models
 
-# Generate text (streaming)
+# Raw models data
+curl http://localhost:8000/models/raw
+
+# Generate text (streaming, default)
 curl -N http://localhost:8000/api/generate \
   -H "Content-Type: application/json" \
   -d '{"model":"llama2","prompt":"Hello"}'
@@ -64,7 +68,7 @@ curl http://localhost:8000/api/generate \
   -H "Content-Type: application/json" \
   -d '{"model":"llama2","prompt":"Hello","stream":false}'
 
-# Chat (streaming)
+# Chat (streaming, default)
 curl -N http://localhost:8000/api/chat \
   -H "Content-Type: application/json" \
   -d '{"model":"llama2","messages":[{"role":"user","content":"Hi"}]}'

@@ -33,12 +33,19 @@ async def models():
         async with httpx.AsyncClient(timeout=10.0) as client:
             r = await client.get(f"{AI_BACKEND_URL}/api/tags")
             r.raise_for_status()
-            return r.json()
+            data = r.json()
+            return {"models": [m["name"] for m in data.get("models", [])]}
     except httpx.HTTPStatusError as e:
         raise HTTPException(status_code=e.response.status_code, detail=str(e))
     except httpx.RequestError as e:
         raise HTTPException(status_code=503, detail=f"Backend unavailable: {str(e)}")
 
+@app.get("/models/raw")
+async def models_raw():
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        r = await client.get(f"{AI_BACKEND_URL}/api/tags")
+        r.raise_for_status()
+        return r.json()
 
 @app.post("/api/generate")
 async def generate(request: Request):
