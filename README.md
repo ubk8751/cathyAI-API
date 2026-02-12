@@ -17,7 +17,7 @@ FastAPI proxy service for AI backends (Ollama, etc.).
 
 3. **Install dependencies:**
    ```bash
-   python -m venv .venv
+   python3 -m venv .venv
    source .venv/bin/activate  # Windows: .venv\Scripts\activate
    pip install -r requirements.txt
    ```
@@ -55,13 +55,29 @@ curl http://localhost:8000/health
 # List models
 curl http://localhost:8000/models
 
-# Generate text
-curl -X POST http://localhost:8000/api/generate \
+# Generate text (streaming)
+curl -N http://localhost:8000/api/generate \
   -H "Content-Type: application/json" \
   -d '{"model":"llama2","prompt":"Hello"}'
 
-# Chat
-curl -X POST http://localhost:8000/api/chat \
+# Generate text (non-streaming)
+curl http://localhost:8000/api/generate \
+  -H "Content-Type: application/json" \
+  -d '{"model":"llama2","prompt":"Hello","stream":false}'
+
+# Chat (streaming)
+curl -N http://localhost:8000/api/chat \
   -H "Content-Type: application/json" \
   -d '{"model":"llama2","messages":[{"role":"user","content":"Hi"}]}'
+
+# Chat (non-streaming)
+curl http://localhost:8000/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"model":"llama2","messages":[{"role":"user","content":"Hi"}],"stream":false}'
+```
+
+## Testing
+
+```bash
+python3 -m pytest test_main.py -v
 ```

@@ -44,14 +44,25 @@ async def models():
 async def generate(request: Request):
     try:
         body = await request.json()
-        async with httpx.AsyncClient(timeout=120.0) as client:
-            r = await client.post(f"{AI_BACKEND_URL}/api/generate", json=body)
-            r.raise_for_status()
-            if body.get("stream", False):
-                return StreamingResponse(r.aiter_bytes(), media_type="application/x-ndjson")
-            return r.json()
+        stream = body.get("stream", True)
+        timeout = httpx.Timeout(connect=10.0, read=None, write=10.0, pool=10.0)
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            if not stream:
+                r = await client.post(f"{AI_BACKEND_URL}/api/generate", json=body)
+                r.raise_for_status()
+                return r.json()
+            
+            async with client.stream("POST", f"{AI_BACKEND_URL}/api/generate", json=body) as r:
+                r.raise_for_status()
+                async def iter_content():
+                    async for chunk in r.aiter_bytes():
+                        yield chunk
+                return StreamingResponse(
+                    iter_content(),
+                    media_type=r.headers.get("content-type", "application/x-ndjson")
+                )
     except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code, detail=str(e))
+        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
     except httpx.RequestError as e:
         raise HTTPException(status_code=503, detail=f"Backend unavailable: {str(e)}")
 
@@ -60,13 +71,24 @@ async def generate(request: Request):
 async def chat(request: Request):
     try:
         body = await request.json()
-        async with httpx.AsyncClient(timeout=120.0) as client:
-            r = await client.post(f"{AI_BACKEND_URL}/api/chat", json=body)
-            r.raise_for_status()
-            if body.get("stream", False):
-                return StreamingResponse(r.aiter_bytes(), media_type="application/x-ndjson")
-            return r.json()
+        stream = body.get("stream", True)
+        timeout = httpx.Timeout(connect=10.0, read=None, write=10.0, pool=10.0)
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            if not stream:
+                r = await client.post(f"{AI_BACKEND_URL}/api/chat", json=body)
+                r.raise_for_status()
+                return r.json()
+            
+            async with client.stream("POST", f"{AI_BACKEND_URL}/api/chat", json=body) as r:
+                r.raise_for_status()
+                async def iter_content():
+                    async for chunk in r.aiter_bytes():
+                        yield chunk
+                return StreamingResponse(
+                    iter_content(),
+                    media_type=r.headers.get("content-type", "application/x-ndjson")
+                )
     except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code, detail=str(e))
+        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
     except httpx.RequestError as e:
         raise HTTPException(status_code=503, detail=f"Backend unavailable: {str(e)}")
